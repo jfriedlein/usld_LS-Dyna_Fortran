@@ -2,7 +2,7 @@
 Basics to implement user-defined elements (usld, uel) in LS-Dyna with Fortran 
 
 ## What is this all about? 
-LS-Dyna offers the interfaces and solvers to, among many other things, simulate mechanical systems and the related material behaviour. To obtain accuracte results we need to utilise adequate elemnet formulations. In case, standard available element formulations (ELFORM=1,-1,-2,...) cannot generate valid results, new user-defined (solid) elements can be implemented. The latter can be implemented as a standalone self-contained routine, in LS-Dyna called "resultant element", where the user implements the entire element formulation (shape functions, integrations, material model, ...) and is provided with the nodal coordinates and displacements, and has to compute the force vector, tangent matrix, and history update for an element. This guide introduces the basics to implement user-defined resultant solid elements in LS-Dyna using the standard Fortran interface. 
+LS-Dyna offers the interfaces and solvers to, among many other things, simulate mechanical systems and the related material behaviour. To obtain accuracte results we need to utilise adequate elemnet formulations. In case, standard available element formulations (ELFORM=1,-1,-2,...) cannot generate valid results, new user-defined (solid) elements can be implemented. The latter can be implemented as a standalone self-contained routine, in LS-Dyna called "resultant element", where the user implements the entire element formulation (shape functions, integrations, material model, ...) and is provided with the nodal coordinates and displacements, and has to compute the force vector, tangent matrix, and history update for an element. This guide introduces the basics to implement user-defined resultant solid elements using the Total Lagrangian formulation in LS-Dyna with the standard Fortran interface. 
 
 ## Software requirements and suggestions 
 The software requirements are similar to the [implementation of umats](https://github.com/jfriedlein/usrmat_LS-Dyna_Fortran), but here Linux is considered.
@@ -34,3 +34,9 @@ code and explanation
 ## Generalised interface for use of separate element subroutines
 
 ## Additional (extra) degrees of freedom xdofs
+
+## Limitations
+currently:
+- no element deletion
+- no remeshing
+- no database cross section for section force: use nodfor instead
