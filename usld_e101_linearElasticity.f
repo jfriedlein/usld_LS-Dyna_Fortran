@@ -1,3 +1,8 @@
+c UEL-helper, e.g. get_initialNodalCoords      
+      include "../UEL_helper_Fortran_LS-Dyna/UEL_helper.f"
+c
+!...
+c
       subroutine usld_e101(force,stiff,ndtot,istif,
      . x1,x2,x3,x4,x5,x6,x7,x8,
      . y1,y2,y3,y4,y5,y6,y7,y8,
