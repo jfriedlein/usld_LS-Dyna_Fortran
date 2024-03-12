@@ -318,14 +318,51 @@ c
 
 ## Some notes on proper simulation and solver settings for testing umats 
 
-## Outline of the interface for umat and utan 
+## Details on the interface for usld
+### force
+* array with dimension (nlq,*): "nlq" is the length of the element block considered. This subroutine is called with e.g. the first block of 192 elements and then with the second block etc. The element indices range from lft to llt. This approach aims at vectorisation. The second index "*" is usually "ndtot", which describes the total number of degrees of freedom for this element. For instance, a 3D element with 8 nodes (and no additional xdofs) has typically 3*8=24 dofs. So, we need to return a force vector for each element in the current block with a force value for each of the dofs. The ordering of the components is a follows: f(1)=node1 x-displacement component, f(2)=node1 y-displacement component, f(3)=node1 z-displacement component, f(4)=node2 x-displacement component, ... f(24)=node8 z-displacement component.
+* Once you use xdofs, the length and ordering changes: e.g. for 1 xdof per node (nxdof=1), ndtot=32: f(1)=node1 x-disp. component, f(2)=node1 y-disp. component, f(3)=node1 z-disp. component, f(4)=node1 xdof1, f(5)=node2 x-disp. component, ... f(32)=node8 xdof1 (see [The Use of User Defined Elements and Extra Degrees of Freedom](https://www.dynalook.com/conferences/16th-international-ls-dyna-conference/constitutive-modeling-t7-1/t7-1-e-constitutive-modeling-127.pdf) on page 7).
+
+### stiff
+* array with dimension (nlq,ndtot,*): This stiffness matrix needs to match to the above force vector for each element in the element block. As for the force, the component are ordered and the matrix has 24x24 components for each element for a 3D element with 8 nodes and no additional xdofs.
+
+### ndtot
+* integer stating the total number of dofs for each element
+
+### istif
+* boolean flag that states whether the stiffness matrix "stiff" must be computed in this step (istif=1) or is not needed. The stiffness matrix is needed for implicit time integration, but only in iterations where a full Newton-Raphson step is conducted. For explicit time integration or for BFGS iteration, we do not need to compute the stiffness matrix and save some computation time.
+
+### x1,x2,...x8,y1,y2,...,y8,z1,...,z8
+* vectors that provide the deformed coordinates of the nodes for each element in the block of length "nlq". "x1" contains the deformed x-coordinates of each node 1 in the block. "x2" contains the deformed x-coordinates of each node 2 in the block. etc.
+
+### xdof
+* array of dimension (nlq,8,*): Contains the current value of the xdofs. The first index is again the element block. So, xdof(1,:,:) returns the xdof-values for element 1. The second index is the node number. So, with xdof(1,3,:), we get the value of the xdofs for node 3 of element 1. The last index considers the xdof values. Each node can have several xdofs, so xdof(1,3,2) return the second xdof for node 3 of element 1
+
+### dx1,dx2,...dx8,dy1,dy2,...,dy8,dz1,...,dz8
+* structured as x1,x2, ... and provides the displacement increment in the current time step. This is used for updated Lagrangian formulation. As we herein use only a total Lagrangian approach, we do not use this input.
+
+### dxdof
+* structured as xdof and provides the increment in the xdof values in the current time step as needed for an updated Lagrangian formulation.
+
+### hsv, ihsv, nhsv
+* array of dimension (nlq,nhsv): This contains the history variables for each element in the block. Each element has the number "nhsv" of history variables as specified on *SECTION_SOLID (see for instance "3_control_UEL.inc" in the folder with numerical examples.
+* Note that you need to organise the history variables for each element. For instance, if your element formulation has 8 integration points and your material model needs 10 history variables, you need nhsv=80 as the history variables are stored for each element.
+* LS-Dyna ensures that the history variables are only saved for the next time step, if the time step convergeed with the current values. You could enforce the history variables to be saved independent of global convergence with "ihsv=1".
+
+### cm, lmc
+* array of length (lmc): list that stores the material parameters as set on the card *SECTION_SOLID with length "lmc" as set by the option on the same keyword card. Note that currently "lmc" is unfortunately limited to only 40 parameters.
 
 ## Generalised interface for use of separate element subroutines
+If you use a separate subroutine for the element formulation or e.g. AceGen to generate the element routine, I can recommend the general interface stated in "usld_e101_generalInterface.f".
 
 ## Additional (extra) degrees of freedom xdofs
+With additional extrad degrees of freedom (xdofs), you can add further field to your problem, such as the temperature, non-local damage, concentration, density, etc. Up to 15 xdofs per node can be used by increasing the default limit of 3 inside "nhisparm.inc" (in the object files) by NXDOFUE=15.
+Initial values for xdofs can also be provided (see [The Use of User Defined Elements and Extra Degrees of Freedom](https://www.dynalook.com/conferences/16th-international-ls-dyna-conference/constitutive-modeling-t7-1/t7-1-e-constitutive-modeling-127.pdf)). However, the visualisation of the values of xdofs is a bit tricky.
+The concept of xdofs can also be creatively. For instance, it is possible to use xdofs for the dofs of mid-nodes to mimic a quadratic element (I did this once with a user-shell element for a 2D plane strain quadratic Serendipity element. However, be warned that setting up the node connectivity for the mid-nodes takes some effort.)
 
-## Limitations
-currently:
+## Current limitations
+- only linear elements (no mid-nodes e.g. for quadratic elements)
 - no element deletion
 - no remeshing
 - no database cross section for section force: use nodfor instead
+- lmc max 40 parameters
