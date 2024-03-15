@@ -316,7 +316,51 @@ c
       end
 ```
 
-## Some notes on proper simulation and solver settings for testing umats 
+## Some notes on simulation and solver settings for testing UEL
+
+### *SECTION_SOLID
+The following shows an exemplary *SECTION_SOLID keyword card used for the linear elastic resultant UEL described above. The option "ELFORM" is chosen as 101 to 105 to indicate the use of a UEL. By choosing NIP=0, we select a resultant element, as we then define by ourselves how many integration points the elements has. "LMC" gives the length of the material constants list, here a value of 2 is used as we use two material parameters in "P1" and "P2", namely the Young's modulus and Poisson ratio, respectively. "NHSV" selects the number of history variables for the entire user-element. Here, we use 6 as we store the six components of the Cauchy stress element-averaged (average of all 8 integration points). Note that the LS-PrePost GUI seems to have a hard time handling UEL and resultant elements, so at best set up and modify this card directly in the keyword file with a text editor.
+```
+*SECTION_SOLID
+$#   secid    elform       aet   
+         1       101         0
+$#     nip     nxdof      ihgf      itaj       lmc      nhsv    
+         0         0         0         0         2         6
+$#      p1        p2        p3        p4        p5        p6        p7        p8
+     100.0       0.3       0.0       0.0       0.0       0.0       0.0       0.0
+```
+
+### Dummy material model *MAT_ELASTIC
+LS-Dyna requires the element's elastic material parameters, e.g. to compute the contact stiffness and critical time step. However, it cannot know the values from the material parameters in *SECTION_SOLID as the parameters can be chosen freely. Therefore, a dummy material model needs to be created and associated with the parts that use the UEL to provide LS-Dyna with those values. The following shows such a dummy elastic material card with MID=1. Note that "E" is the same value as the Young's modulus above, the same with the Poisson ratio "PR".
+```
+*MAT_ELASTIC
+$#     mid        ro         e        pr        da        db  not used        
+         1   7.80E-9     100.0       0.3       0.0       0.0       0.0
+```
+
+### *PART
+On the *PART keyword we associate the part that shall use the UEL with the above section SECID=1 and the dummy material with MID=1. Note, that MID provides the part merely with the dummy material. The material behaviour of the elements is still 100% governed by the resultant user element.
+```
+*PART
+$#                                                                         title
+part
+$#     pid     secid       mid     eosid      hgid      grav    adpopt      tmid
+         1         1         1         0         0         0         0         0
+```
+
+### Solver control
+If you use implicit time integration and provide a consistent tangent matrix by the output variable "stiff", you can use a full Newton-Raphson method (ILIMIT=1) to obtain and verify a quadratic rate of convergence (quadratic convergence does hardly matter in LS-Dyna in general, because it usually does not help you in real applications). Further you can set the tolerance values, as exemplified below, to actually see the force residual decreasing quadratically.
+```
+*CONTROL_IMPLICIT_SOLUTION
+$#  nsolvr    ilimit    maxref     dctol     ectol     rctol     lstol    abstol
+        12         1        16  1.00E-20  1.00E-20  1.000E-8       0.9  -1.00E-6
+$#   dnorm    diverg     istif   nlprint    nlnorm   d3itctl     cpchk     
+         1         2         1         3         2         0         0
+$#  arcctl    arcdir    arclen    arcmth    arcdmp    arcpsi    arcalf    arctim
+         0         0       0.0         1         2         0         0         0
+$#   lsmtd     lsdir      irad      srad      awgt      sred    
+         4         2       0.0       0.0       0.0       0.0
+```
 
 ## Details on the interface for usld
 ### force
@@ -352,6 +396,10 @@ c
 ### cm, lmc
 * array of length (lmc): list that stores the material parameters as set on the card *SECTION_SOLID with length "lmc" as set by the option on the same keyword card. Note that currently "lmc" is unfortunately limited to only 40 parameters.
 
+## Total Lagrangian formulation
+As described herein a total Lagrangian formulation can be used for resultant user element. The standard interface however only provides the deformed coordinates and the current increment in the displacements. So, you have at first no information on the initial undeformed coordinates or the total deformation. The initial undeformed coordinates can be accessed by common-blocks and pointers as detailed in "get_initialNodalCoords_1element_R102.f" inside the UEL_helper. This functions accesses the values and return them cleanly. Also be aware of some details such as "c$omp threadprivate (/aux33loc/)" to ensure that you can run this function on multiple CPUs.
+I guess the approach of using the undeformed coordinates will fail once remeshing is used. However, the how, when and why still needs to be tested.
+
 ## Generalised interface for use of separate element subroutines
 If you use a separate subroutine for the element formulation or e.g. AceGen to generate the element routine, I can recommend the general interface stated in "usld_e101_generalInterface.f".
 
@@ -359,6 +407,10 @@ If you use a separate subroutine for the element formulation or e.g. AceGen to g
 With additional extrad degrees of freedom (xdofs), you can add further field to your problem, such as the temperature, non-local damage, concentration, density, etc. Up to 15 xdofs per node can be used by increasing the default limit of 3 inside "nhisparm.inc" (in the object files) by NXDOFUE=15.
 Initial values for xdofs can also be provided (see [The Use of User Defined Elements and Extra Degrees of Freedom](https://www.dynalook.com/conferences/16th-international-ls-dyna-conference/constitutive-modeling-t7-1/t7-1-e-constitutive-modeling-127.pdf)). However, the visualisation of the values of xdofs is a bit tricky.
 The concept of xdofs can also be creatively. For instance, it is possible to use xdofs for the dofs of mid-nodes to mimic a quadratic element (I did this once with a user-shell element for a 2D plane strain quadratic Serendipity element. However, be warned that setting up the node connectivity for the mid-nodes takes some effort.)
+
+## Example element formulations
+todo:
+- provide the fortran subroutine for a fully integrated 3D element with a general function for the material model (e.g. with full integration, reduced integration, F-bar)
 
 ## Current limitations
 - only linear elements (no mid-nodes e.g. for quadratic elements)
