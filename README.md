@@ -25,7 +25,31 @@ Please be aware that Fortran has some “features” that might (most certainly)
 1. Open your working directory (the folder with the unpacked object version, e.g. ls-dyna_smp_d_R11_1_0_139588_winx64_ifort2017vs2017_lib) in your IDE, e. g. VS-code.
 2. Implement your element formulation code (computation of force vector, stiffness matrix, history variables ...) in the file dyn21usld.f. We code our model in the first unused user-solid routine usld_e101. Below an example for this routine is presented for a fully integrated linear elastic 3D solid element with 8-nodes and linear shape functions. The code is quite lengthy and not optimised as it aims to show the steps one-by-one with minimal use of separate functions.
 
-```fortran
+  ```fortran
+      subroutine usld_e101(force,stiff,ndtot,istif,
+     . x1,x2,x3,x4,x5,x6,x7,x8,
+     . y1,y2,y3,y4,y5,y6,y7,y8,
+     . z1,z2,z3,z4,z5,z6,z7,z8,
+     . xdof,
+     . dx1,dx2,dx3,dx4,dx5,dx6,dx7,dx8,
+     . dy1,dy2,dy3,dy4,dy5,dy6,dy7,dy8,
+     . dz1,dz2,dz3,dz4,dz5,dz6,dz7,dz8,
+     . dxdof,
+     . hsv,ihsv,nhsv,
+     . cm,lmc,
+     . cmtrx,lft,llt,dener)
+c
+c     compute force (and stiffness) for user defined solid 101
+c
+... see full code below under "Expand Code"
+      return
+      end
+  ```
+
+<details>
+  <summary>Expand code</summary>
+  
+  ```fortran
       subroutine usld_e101(force,stiff,ndtot,istif,
      . x1,x2,x3,x4,x5,x6,x7,x8,
      . y1,y2,y3,y4,y5,y6,y7,y8,
@@ -314,7 +338,8 @@ c
       enddo ! end loop over elements
       return
       end
-```
+  ```
+</details>
 
 ## Some notes on simulation and solver settings for testing UEL
 
