@@ -389,8 +389,21 @@ $#   lsmtd     lsdir      irad      srad      awgt      sred
 
 ## Details on the interface for usld
 ### force
-* array with dimension (nlq,*): "nlq" is the length of the element block considered. This subroutine is called with e.g. the first block of 192 elements and then with the second block etc. The element indices range from lft to llt. This approach aims at vectorisation. The second index "*" is usually "ndtot", which describes the total number of degrees of freedom for this element. For instance, a 3D element with 8 nodes (and no additional xdofs) has typically 3*8=24 dofs. So, we need to return a force vector for each element in the current block with a force value for each of the dofs. The ordering of the components is a follows: f(1)=node1 x-displacement component, f(2)=node1 y-displacement component, f(3)=node1 z-displacement component, f(4)=node2 x-displacement component, ... f(24)=node8 z-displacement component.
-* Once you use xdofs, the length and ordering changes: e.g. for 1 xdof per node (nxdof=1), ndtot=32: f(1)=node1 x-disp. component, f(2)=node1 y-disp. component, f(3)=node1 z-disp. component, f(4)=node1 xdof1, f(5)=node2 x-disp. component, ... f(32)=node8 xdof1 (see [The Use of User Defined Elements and Extra Degrees of Freedom](https://www.dynalook.com/conferences/16th-international-ls-dyna-conference/constitutive-modeling-t7-1/t7-1-e-constitutive-modeling-127.pdf) on page 7).
+* array with dimension (nlq,*): "nlq" is the length of the element block considered. This subroutine is called with e.g. the first block of 192 elements and then with the second block etc. The element indices range from lft to llt. This approach aims at vectorisation. The second index "*" is usually "ndtot", which describes the total number of degrees of freedom for this element. For instance, a 3D element with 8 nodes (and no additional xdofs) has typically 3*8=24 dofs. So, we need to return a force vector for each element in the current block with a force value for each of the dofs. The ordering of the components is a follows: 
+    - f(1)=node1 x-displacement component, 
+    - f(2)=node1 y-displacement component, 
+    - f(3)=node1 z-displacement component, 
+    - f(4)=node2 x-displacement component,
+    - ...
+    - f(24)=node8 z-displacement component.
+* Once you use xdofs, the length and ordering changes: e.g. for 1 xdof per node (nxdof=1), ndtot=32 (see [The Use of User Defined Elements and Extra Degrees of Freedom](https://www.dynalook.com/conferences/16th-international-ls-dyna-conference/constitutive-modeling-t7-1/t7-1-e-constitutive-modeling-127.pdf) on page 7):
+    - f(1)=node1 x-disp. component,
+    - f(2)=node1 y-disp. component,
+    - f(3)=node1 z-disp. component,
+    - f(4)=node1 xdof1,
+    - f(5)=node2 x-disp. component,
+    - ... 
+    - f(32)=node8 xdof1
 
 ### stiff
 * array with dimension (nlq,ndtot,*): This stiffness matrix needs to match to the above force vector for each element in the element block. As for the force, the component are ordered and the matrix has 24x24 components for each element for a 3D element with 8 nodes and no additional xdofs.
