@@ -457,3 +457,8 @@ todo:
 - no database cross section for section force: use nodfor instead
 - lmc max 40 parameters
 - if the default mass matrix is not replaced, do not use UEL with *CONTROL_IMPLICIT_DYNAMICS as the default mass matrix is way off
+
+
+## todo
+- "UEL_helper_Fortran_LS-Dyna" is included as submodule in git, but is therefore not downloaded when using "Code"->"Download ZIP". This is a common (and annoying) limitation/bug in git (status 2024). Please manually download the submodule or clone the entire repo (including submodules)
+- function "isNan(*)" is only avaible for ifort compiler, e.g. not for pgi. Maybe use ( a /= 1 ) or ( a == NaN )?
